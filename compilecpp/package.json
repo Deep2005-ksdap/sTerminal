@@ -14,17 +14,29 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "compilecpp.helloWorld",
-        "title": "CompileCPP: Hello World"
-      },
-      {
-        "command": "compilecpp.compileCurrentFile",
-        "title": "CompileCPP: Compile Current File"
-      }
-    ]
-  },
+  "commands": [
+    {
+      "command": "compilecpp.runCurrentFile",
+      "title": "sTerminal: Compile and Run"
+    },
+    {
+      "command": "compilecpp.stopExecution",
+      "title": "sTerminal: Stop Execution"
+    }
+  ],
+  "keybindings": [
+    {
+      "command": "compilecpp.runCurrentFile",
+      "key": "f5",
+      "when": "editorTextFocus && resourceLangId == cpp"
+    },
+    {
+      "command": "compilecpp.stopExecution",
+      "key": "shift+f5",
+      "when": "editorTextFocus && resourceLangId == cpp"
+    }
+  ]
+},
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",

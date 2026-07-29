@@ -46,7 +46,7 @@ public:
         return compileResult == 0;
     }
 
-    int getCompilationTime(){
+    double getCompilationTime(){
         return compileTime;
     }
 };
@@ -63,7 +63,7 @@ public:
         return runResult == 0;
     }
 
-    int getRunTime(){
+    double getRunTime(){
         return runTime;
     }
 };
@@ -92,15 +92,18 @@ int main(int argc, char** argv) {
 
     Executer executer;
 
-    cout << "Compilation Time: " <<compiler.getCompilationTime() << "ms\t";
-    cout << "|\t";
-    cout << "Execution Time: " <<executer.getRunTime() << "ms\n";
-
-    cout << "--- Program Output ---\n";
+    
+    cout << "\n--- Program Output ---\n\n";
+    cout.flush();
+    
     if (!executer.run(outputExe)) {
         cerr << "Execution Failed!\n";
         return 1;
     }
+    
+    
+    cout << "\nCompilation Time: " <<compiler.getCompilationTime() << "ms\n";
+    cout << "Execution Time: " <<executer.getRunTime() << "ms\n";
 
     return 0;
 }

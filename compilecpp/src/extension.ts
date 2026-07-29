@@ -1,61 +1,53 @@
 import * as vscode from "vscode";
-import { spawn } from "child_process";
+import * as path from "path";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+let terminal: vscode.Terminal | undefined;
+
 export function activate(context: vscode.ExtensionContext) {
-  vscode.window.showInformationMessage("CompileCPP Activated!");
-
-  console.log("CompileCPP Activated!");
-
-  const disposableHello = vscode.commands.registerCommand(
-    "compilecpp.helloWorld",
-    () => {
+  const disposableRun = vscode.commands.registerCommand(
+    "compilecpp.runCurrentFile",
+    async () => {
       const editor = vscode.window.activeTextEditor;
-
       if (!editor) {
         vscode.window.showErrorMessage("No active editor found!");
         return;
       }
 
-      const filePath = editor.document.fileName;
-
-      const runnerPath =
-        "C:\\Users\\dk128\\OneDrive\\Desktop\\YOU 2.0\\WebDev\\Projects\\sTerminal\\main.exe";
-
-      const child = spawn(runnerPath, [filePath]);
-      child.stdout.on("data", (data) => {
-        console.log(data.toString());
-      });
-      child.stderr.on("data", (data) => {
-        console.error(data.toString());
-      });
-      child.on("close", (code) => {
-        console.log(`Runner exited with code ${code}`);
-      });
-    },
-  );
-
-  const disposableCompile = vscode.commands.registerCommand(
-    "compilecpp.compileCurrentFile",
-    () => {
-      const editor = vscode.window.activeTextEditor;
-
-      if (!editor) {
-        vscode.window.showErrorMessage("No active editor found!");
-        return;
+      if (editor.document.isDirty) {
+        await editor.document.save();
       }
 
       const filePath = editor.document.fileName;
 
-      vscode.window.showInformationMessage(
-        `CompileCPP command triggered for: ${filePath}`,
-      );
+      if (!terminal || terminal.exitStatus !== undefined) {
+        terminal = vscode.window.createTerminal("sTerminal");
+      }
+      terminal.show();
+
+      const runnerPath = path.join(context.extensionPath, "..","main.exe");
+
+      // Wait a tick for shellIntegration to attach on a freshly created terminal
+      if (!terminal.shellIntegration) {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
+      if (terminal.shellIntegration) {
+        terminal.shellIntegration.executeCommand(
+          `"${runnerPath}" "${filePath}"`,
+        );
+      } else {
+        terminal.sendText(`"${runnerPath}" "${filePath}"`);
+      }
     },
   );
 
-  context.subscriptions.push(disposableHello, disposableCompile);
+  context.subscriptions.push(
+    vscode.window.onDidEndTerminalShellExecution((e) => {
+      console.log(`Command finished with exit code ${e.exitCode}`);
+    }),
+  );
+
+  context.subscriptions.push(disposableRun);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
