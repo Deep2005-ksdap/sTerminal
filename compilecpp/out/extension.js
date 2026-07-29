@@ -53,7 +53,7 @@ function activate(context) {
             terminal = vscode.window.createTerminal("sTerminal");
         }
         terminal.show();
-        const runnerPath = path.join(context.extensionPath, "..", "main.exe");
+        const runnerPath = path.join(context.extensionPath, "Engine", "main.exe");
         // Wait a tick for shellIntegration to attach on a freshly created terminal
         if (!terminal.shellIntegration) {
             await new Promise((r) => setTimeout(r, 300));

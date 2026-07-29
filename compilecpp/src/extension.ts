@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       terminal.show();
 
-      const runnerPath = path.join(context.extensionPath, "..","main.exe");
+      const runnerPath = path.join(context.extensionPath, "Engine","main.exe");
 
       // Wait a tick for shellIntegration to attach on a freshly created terminal
       if (!terminal.shellIntegration) {
