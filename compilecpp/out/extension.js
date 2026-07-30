@@ -37,7 +37,11 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
 const path = __importStar(require("path"));
+const child_process_1 = require("child_process");
 let terminal;
+let timeoutHandle;
+let currentPid;
+const TIMEOUT_MS = 10000;
 function activate(context) {
     const disposableRun = vscode.commands.registerCommand("compilecpp.runCurrentFile", async () => {
         const editor = vscode.window.activeTextEditor;
@@ -54,21 +58,60 @@ function activate(context) {
         }
         terminal.show();
         const runnerPath = path.join(context.extensionPath, "Engine", "main.exe");
-        // Wait a tick for shellIntegration to attach on a freshly created terminal
         if (!terminal.shellIntegration) {
             await new Promise((r) => setTimeout(r, 300));
         }
+        // Grab the PID of the shell so we can kill the process tree if needed
+        currentPid = await terminal.processId;
         if (terminal.shellIntegration) {
             terminal.shellIntegration.executeCommand(`"${runnerPath}" "${filePath}"`);
         }
         else {
             terminal.sendText(`"${runnerPath}" "${filePath}"`);
         }
+        // Clear any leftover timer from a previous run before starting a new one
+        if (timeoutHandle) {
+            clearTimeout(timeoutHandle);
+        }
+        timeoutHandle = setTimeout(() => {
+            if (currentPid) {
+                (0, child_process_1.exec)(`taskkill /PID ${currentPid} /T /F`, (err) => {
+                    if (!err) {
+                        vscode.window.showWarningMessage(`sTerminal: Auto-stopped — exceeded ${TIMEOUT_MS / 1000}s (possible infinite loop)`);
+                    }
+                });
+            }
+        }, TIMEOUT_MS);
     });
+    const disposableStop = vscode.commands.registerCommand("compilecpp.stopExecution", () => {
+        if (timeoutHandle) {
+            clearTimeout(timeoutHandle);
+        }
+        if (currentPid) {
+            (0, child_process_1.exec)(`taskkill /PID ${currentPid} /T /F`, (err) => {
+                if (err) {
+                    vscode.window.showErrorMessage(`Could not stop: ${err.message}`);
+                }
+                else {
+                    vscode.window.showInformationMessage("Execution stopped.");
+                }
+            });
+        }
+        else {
+            vscode.window.showInformationMessage("No running process to stop.");
+        }
+    });
+    // THIS is the fix — cancel the timeout the moment the command actually finishes
     context.subscriptions.push(vscode.window.onDidEndTerminalShellExecution((e) => {
-        console.log(`Command finished with exit code ${e.exitCode}`);
+        if (e.terminal === terminal) {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+                timeoutHandle = undefined;
+            }
+            console.log(`Command finished with exit code ${e.exitCode}`);
+        }
     }));
-    context.subscriptions.push(disposableRun);
+    context.subscriptions.push(disposableRun, disposableStop);
 }
 function deactivate() { }
 //# sourceMappingURL=extension.js.map
